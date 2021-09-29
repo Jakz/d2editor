@@ -28,7 +28,7 @@ public class Casc implements AutoCloseable
 
   
   private VirtualFileSystem vfs;
-  private TreeMap<String, PathResult> mapping;
+  private final TreeMap<String, PathResult> mapping = new TreeMap<>();
   private Storage storage;
   
   public Casc(Path dataFolder, Path cacheFolder)
@@ -63,9 +63,10 @@ public class Casc implements AutoCloseable
       vfs = new VirtualFileSystem(storage, buildConfiguration.getConfiguration());
       List<PathResult> allFilePaths = vfs.getAllFiles();
       
-      mapping = new TreeMap<>();
       for (PathResult pr : allFilePaths)
         mapping.put(pr.getPath(), pr);
+
+      System.out.println("opened CASC archive, " + mapping.size()+ " entries");
     }
   }
   
@@ -73,6 +74,30 @@ public class Casc implements AutoCloseable
   {
     if (storage != null)
       storage.close();
+  }
+  
+  public ByteBuffer get(String path)
+  {
+    try
+    {
+      PathResult result = mapping.get(path);
+      
+      if (result == null)
+        throw new NullPointerException("Can't find entry: " + path);
+      else
+      {
+        long size = result.getFileSize();
+        ByteBuffer buffer = ByteBuffer.allocate((int)size);
+        result.readFile(buffer);
+        return buffer;
+      }
+    }
+    catch (IOException e)
+    {
+      e.printStackTrace();
+      return null;
+
+    }
   }
   
   public void extractSubfolder(String path) throws IOException
