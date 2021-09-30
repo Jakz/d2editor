@@ -5,6 +5,8 @@ import java.nio.file.Paths;
 
 import com.github.jakz.d2editor.casc.Casc;
 import com.github.jakz.d2editor.casc.ImageCache;
+import com.github.jakz.d2editor.save.SaveFile;
+import com.github.jakz.d2editor.ui.UI;
 
 public class App
 {
@@ -19,13 +21,25 @@ public class App
   {            
     try
     {
-      casc.open();
+      try (SaveFile save = new SaveFile(Paths.get("C:\\Users\\Jack\\Documents\\Diablo II Resurrected\\Save\\slayer.d2s")))
+      {
+        System.out.println("Valid header: "+save.hasValidSignature());
+        System.out.println("Version: "+save.version());
+        System.out.println("Size in bytes: "+save.sizeInBytes());
+        System.out.println("Checksum correct: "+(save.checksum() == save.computedChecksum()));
+        System.out.println("Name: "+save.name());
+
+
+      }
       
-      imageCache.get("panel", "inventory", "background");
+      /*casc.open();
       
+      //imageCache.get("panel", "inventory", "background");
       //casc.extractSubfolder(Casc.PATH_HD_INTERFACE);
       
       casc.close();
+      
+      UI.init();*/
     }
     catch (Exception e)
     {

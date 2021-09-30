@@ -31,7 +31,7 @@ public class ImageCache
     cache = new HashMap<>();
   }
   
-  public Image get(String... key)
+  public BufferedImage get(String... key)
   {
     String ckey = CASC_PATH_PREFIX + Arrays.stream(key).collect(Collectors.joining("\\"));
     
