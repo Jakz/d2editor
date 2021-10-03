@@ -3,6 +3,7 @@ package com.github.jakz.d2editor.save;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.BitSet;
 import java.util.Optional;
@@ -18,11 +19,11 @@ public class SaveFile implements AutoCloseable
   }
   
   
-  BinaryBuffer d;
+  BitArray d;
   
   public SaveFile(Path file) throws FileNotFoundException, IOException
   {
-    d = new BinaryBuffer(file, BinaryBuffer.Mode.READ, ByteOrder.LITTLE_ENDIAN);
+    d = new BitArray(Files.readAllBytes(file));
   }
   
   public int signature()
@@ -45,63 +46,61 @@ public class SaveFile implements AutoCloseable
     return d.readU32(SaveOffsets.CHECKSUM);
   }
   
-  public int offsetItemsChunk()
+  private int seekHeader(String value)
   {
-    return offsetSkillsChunk() + 32;
+    if (value.length() != 2)
+      throw new SaveFormatException("seekHeader requires a 2 character value");
+    
+    d.seek(SaveOffsets.CHUNK_STATS);
+    
+    int i = d.position();
+    while (i + 1 < d.size())
+    {
+      d.seek(i);
+      String s = d.readString(2);
+            
+      if (s.equals(value))
+        return i;
+      
+      ++i;
+    }
+    
+    throw new SaveFormatException("unable to find header "+value);
   }
-  
-  public int offsetSkillsChunk()
-  {
-    return SaveOffsets.CHUNK_STATS + savedStatsCount() * 4 + 2 + 2;
-  }  
-  
+
   public void loadItems()
   {
-    int offset = offsetItemsChunk();
+    int o = seekHeader("JM");   
     
-    d.position(offset);
     
-    require(d.readU8() == 'J' && d.readU8() == 'M', "invalid item chunk header");
+    int n = d.readU16(o + 2);
+    
+    System.out.println("Loading " + n + " items");
+    
+    for (int i = 0; i < 1; ++i)
+    {
+      
+    }
+    
   }
   
   public void loadSkills()
   {
-    int offset = offsetSkillsChunk();
-    d.position(offset);
-    require(d.readU8() == 'i' && d.readU8() == 'f', "invalid skills chunk header");
-
+    int o = seekHeader("if");
   }
   
   public void loadStats()
   {
-    d.position(SaveOffsets.CHUNK_STATS);
+    d.seek(SaveOffsets.CHUNK_STATS);
     
     require(d.readU8() == 'g' && d.readU8() == 'f', "invalid stats chunk header");
-    
-    int i = d.position();
-    while (i + 1 < d.length())
-    {
-      if (d.read(i) == 'i' && d.read(i+1) == 'f')
-        break;
-      ++i;
-    }
-    
-    byte[] data = new byte[i - SaveOffsets.CHUNK_STATS + 2];
-    d.read(data, SaveOffsets.CHUNK_STATS + 2);
-    
-    System.out.println("Test");
-   
-    BitArray array = new BitArray(data);
-      
-    System.out.println(array);
-    
+                     
     final int BIT_PER_STAT_INDEX = 9;
     final int ATTRIBUTE_END = 0x1ff;
     
-    for (int k = 0; k + BIT_PER_STAT_INDEX < array.size(); /**/)
+    while (!d.didReachEnd())
     {
-      int which = array.read(k, BIT_PER_STAT_INDEX);
-      k += BIT_PER_STAT_INDEX;
+      int which = d.readBits(BIT_PER_STAT_INDEX);
       
       if (which == ATTRIBUTE_END)
         break;
@@ -115,50 +114,50 @@ public class SaveFile implements AutoCloseable
       
       int bitCount = attr.bitsInStatsSave;
       
-      long value = array.read(k, bitCount) >> attr.bitShiftInStatsSave;
+      long value = d.readBits(bitCount) >> attr.bitShiftInStatsSave;
  
       System.out.println("Stat " + attr.name() + ": "+ value);
-      k += bitCount; 
     }
   }
   
   public String name()
   {
-    byte[] data = new byte[16];
-    d.read(data, 20);
-    
     StringBuilder builder = new StringBuilder();
     
-    int c = 0;
-    while (data[c] != 0)
-      builder.append((char)data[c++]);
+    d.seek(SaveOffsets.NAME);
     
+    for (int i = 0; i < SaveOffsets.NAME_LENGTH; ++i)
+    {
+      int v = d.readU8();
+      
+      if (v == 0)
+        break;
+      
+      builder.append((char)v);
+    }
+
     return builder.toString();
   }
-  
-  public int savedStatsCount()
-  {
-    int mask = d.readU16(SaveOffsets.CHUNK_STATS + 2);
-    int count = 0;
-    
-    for (int i = 0; i < 16; ++i)
-      if ((mask & (1 << i)) == 1 << i)
-        ++count;
-    
-    System.out.println("Saved stats count: "+count);
-    return count;
-  }
-  
-  
+
   public long computedChecksum()
   {
     int backup = d.position();
-    int checksum = 0;
+    long checksum = 0;
+    int carry = 0;
     
     while (!d.didReachEnd())
-      checksum = (checksum << 1) + d.readU8();
+    {
+      int value = d.readU8(); 
+      
+      if (d.position() >= SaveOffsets.CHECKSUM && d.position() <= SaveOffsets.CHECKSUM + 4)
+        value = 0;
+
+      carry = (checksum & (1l << 31)) != 0 ? 1 : 0;
+      checksum = ((checksum << 1) + value + carry) & 0x00000000FFFFFFFF;
+      
+    }
         
-    d.position(backup);
+    d.seek(backup);
     
     return checksum;
   }
@@ -171,6 +170,6 @@ public class SaveFile implements AutoCloseable
   @Override
   public void close() throws Exception
   {
-    d.close();
+
   }
 }

@@ -32,7 +32,7 @@ public class App
 
         save.loadStats();
         //save.loadSkills();
-        //save.loadItems();
+        save.loadItems();
       }
       
       /*casc.open();

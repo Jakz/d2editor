@@ -1,48 +1,108 @@
 package com.github.jakz.d2editor.save;
 
+import java.util.Arrays;
+
 public class BitArray
-{
-  private final static int BPB = 8;
-  
-  byte[] bits;
+{  
+  byte[] bytes;
+  int b, B;
   
   public BitArray(byte[] bytes)
   {
-    bits = new byte[bytes.length * BPB];
-    
-    for (int j = 0; j < bytes.length; ++j)
-    {
-      byte b = bytes[j];
-      for (int i = 0; i < BPB; ++i)
-      {
-        //byte v = (byte) ((b & (1 << (BPB - 1 - i))) != 0 ? 1 : 0);
-        byte v = (byte) ((b & (1 << i)) != 0 ? 1 : 0);
-        bits[j * BPB + i] = v;
-      }
-    }
+    this.bytes = bytes;
+    b = 0;
+    B = 0;
   }
   
-  public int read(int offset, int nbits)
-  {   
+  public String readString(int length)
+  {
+    String value = new String(Arrays.copyOfRange(bytes, B, B+2));
+    B += length;
+    return value;
+  }
+  
+  public int readU8()
+  {
+    if (b != 0)
+      throw new IllegalArgumentException("Can't read aligned data if offset is not aligned");
+    
+    int v = bytes[B] & 0xFF;
+    ++B;
+    
+    return v;
+  }
+  
+  public int readU16()
+  {
+    if (b != 0)
+      throw new IllegalArgumentException("Can't read aligned data if offset is not aligned");
+    
+    int v1 = bytes[B] & 0xFF, v2 = bytes[B+1] & 0xFF;
+    B += 2;
+    
+    return v2 << 8 | v1;
+  }
+  
+  public int readU32()
+  {
+    if (b != 0)
+      throw new IllegalArgumentException("Can't read aligned data if offset is not aligned");
+    
+    int v1 = bytes[B] & 0xFF, v2 = bytes[B+1] & 0xFF;
+    int v3 = bytes[B+2] & 0xFF, v4 = bytes[B+3] & 0xFF;
+    B += 4;
+    
+    return v4 << 24 | v3 << 16 | v2 << 8 | v1;
+  }
+   
+  public int readBits(int bits)
+  {
     int r = 0;
     
-    for (int i = 0; i < nbits; ++i)
+    for (int i = 0; i < bits; ++i)
     {
-      byte v = bits[offset + i];
-      //byte v = bits[offset + nbits - 1 - i];
+      byte bb = bytes[B];
       
-      if (v == 1)
+      if ((bb & (1 << b)) != 0)
         r |= 1 << i;
+      
+      ++b;
+      
+      if (b == 8)
+      {
+        ++B;
+        b = 0;
+      }
     }
-    
-    //System.out.println("read("+offset+", "+nbits+") : "+r);
     
     return r;
   }
   
-  public int size() { return bits.length; }
+  public int readBits(int offset, int nbits)
+  {   
+    seek(offset);
+    return readBits(nbits);
+  }
   
-  public String toString()
+  public int readU8(int offset)
+  {
+    seek(offset);
+    return readU8();
+  }
+
+  public int readU16(int offset)
+  {
+    seek(offset);
+    return readU16();
+  }
+  
+  public int readU32(int offset)
+  {
+    seek(offset);
+    return readU32();
+  }
+    
+  /*public String toString()
   {
     StringBuilder b = new StringBuilder();
     
@@ -56,5 +116,29 @@ public class BitArray
     }
     
     return b.toString();
+  }*/
+  
+  public void seek(int offset)
+  {
+    /*B = offset / 8;
+    b = offset % 8;*/
+    
+    B = offset;
+    b = 0;
+  }
+  
+  public int position()
+  {
+    return B;
+  }
+  
+  public int size()
+  {
+    return bytes.length;
+  }
+  
+  public boolean didReachEnd()
+  {
+    return B >= bytes.length;
   }
 }
