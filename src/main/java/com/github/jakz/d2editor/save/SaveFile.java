@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.BitSet;
 import java.util.Optional;
 
+import com.github.jakz.d2editor.data.Attribute;
 import com.pixbits.lib.io.BinaryBuffer;
 
 public class SaveFile implements AutoCloseable
@@ -72,15 +73,68 @@ public class SaveFile implements AutoCloseable
   {
     int o = seekHeader("JM");   
     
-    
-    int n = d.readU16(o + 2);
+    d.seek(o+2);
+    int n = d.readU16();
     
     System.out.println("Loading " + n + " items");
     
     for (int i = 0; i < 1; ++i)
     {
-      
+      loadItem();
     }
+    
+  }
+  
+  private void loadItem()
+  {    
+    final int version = 0x60;// 0x61 on r
+    
+    /*if (!d.readString(2).equals("JM"))
+      throw new SaveFormatException("missing JM item header");*/
+    System.out.println(d.finePosition());
+    
+    d.readBits(4); // 0
+    boolean identified = d.readBool(); // 4
+    d.readBits(6); // 5
+    boolean socketed = d.readBool(); // 11
+    d.readBits(1); // 12
+    boolean newItem = d.readBool(); // 13
+    d.readBits(2); // 14
+    boolean isEar = d.readBool(); // 16
+    boolean starterGear = d.readBool(); // 17
+    d.readBits(3); // 18
+    boolean simple = d.readBool(); // 21
+    boolean ethereal = d.readBool(); // 22
+    d.readBits(1); // 23
+    boolean personalized = d.readBool(); // 24
+    d.readBits(1); // 25
+    boolean runeword = d.readBool(); // 26
+    d.readBits(5); // 27
+    
+    if (version <= 0x60)
+      d.readBits(10);
+    else
+      d.readBits(3);
+    
+    int parent = d.readBits(3); // 32
+    int equipped = d.readBits(4); // 35
+    int column = d.readBits(4); // 39
+    int row = d.readBits(4); // 43
+    int alternatePosition = d.readBits(3); // 47
+    
+    if (isEar)
+    {
+      // TODO
+    }
+    else
+    {
+      String code = d.readString(4);
+      System.out.println("item "+code);
+
+
+    }
+    
+    System.out.println(d.finePosition());
     
   }
   

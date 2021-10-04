@@ -1,4 +1,4 @@
-package com.github.jakz.d2editor.save;
+package com.github.jakz.d2editor.data;
 
 import java.util.Arrays;
 import java.util.stream.Stream;

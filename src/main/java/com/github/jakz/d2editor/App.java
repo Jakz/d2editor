@@ -5,6 +5,7 @@ import java.nio.file.Paths;
 
 import com.github.jakz.d2editor.casc.Casc;
 import com.github.jakz.d2editor.casc.ImageCache;
+import com.github.jakz.d2editor.data.DataTables;
 import com.github.jakz.d2editor.save.BitArray;
 import com.github.jakz.d2editor.save.SaveFile;
 import com.github.jakz.d2editor.ui.UI;
@@ -22,6 +23,20 @@ public class App
   {            
     try
     {
+      try
+      {
+        DataTables data = new DataTables();
+        data.loadData();
+        
+        UI.init();
+        UI.dataViewerPanel.setData(data);
+      }
+      catch (Exception e)
+      {
+        e.printStackTrace();
+      }
+      
+      
       try (SaveFile save = new SaveFile(Paths.get("Slayer-21-22-23-25.d2s")))
       {
         System.out.println("Valid header: "+save.hasValidSignature());

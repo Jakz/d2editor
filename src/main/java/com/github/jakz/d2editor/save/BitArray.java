@@ -54,6 +54,11 @@ public class BitArray
     
     return v4 << 24 | v3 << 16 | v2 << 8 | v1;
   }
+  
+  public boolean readBool()
+  {
+    return readBits(1) == 1 ? true : false;
+  }
    
   public int readBits(int bits)
   {
@@ -130,6 +135,11 @@ public class BitArray
   public int position()
   {
     return B;
+  }
+  
+  public int finePosition()
+  {
+    return B * 8 + b;
   }
   
   public int size()
