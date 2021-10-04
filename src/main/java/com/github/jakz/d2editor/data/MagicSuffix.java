@@ -18,6 +18,7 @@ public class MagicSuffix
   public int clazzLevelReq;
   
   public int frequency;
+  public int group;
   
   public boolean isExpansion() { return version >= 100; }
 }

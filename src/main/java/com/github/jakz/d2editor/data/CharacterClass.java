@@ -29,6 +29,9 @@ public enum CharacterClass
   
   public static CharacterClass findByCodeOrDefault(String code, CharacterClass def)
   {
-    return CharacterClass.stream().filter(c -> c.code.equals(code)).findFirst().orElse(def);
+    if (code.isEmpty())
+      return def;
+    else 
+      return CharacterClass.stream().filter(c -> c.code.equals(code)).findFirst().get();
   }
 }

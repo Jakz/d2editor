@@ -29,7 +29,7 @@ public class DataTable<T> extends JPanel
     
     setLayout(new BorderLayout());
     JScrollPane pane = new JScrollPane(table);
-    pane.setPreferredSize(new Dimension(600, 500));
+    pane.setPreferredSize(new Dimension(1024, 768));
     add(pane, BorderLayout.CENTER);
 
     columnBuilder.accept(model);
